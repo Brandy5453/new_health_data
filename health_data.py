@@ -1,5 +1,5 @@
 # import streamlit as st
-# import mysql.connector
+# import mysql.connector4
 # import pandas as pd
 # from datetime import datetime
 # import re
@@ -829,8 +829,8 @@ def init_db():
         created_at VARCHAR(20)
     )''')
     conn.commit()
-    # Update existing records with date_of_birth before 1950
-    c.execute("UPDATE screening SET date_of_birth = '1950-01-01' WHERE date_of_birth < '1950-01-01'")
+    # Update existing records with date_of_birth before 1945
+    c.execute("UPDATE screening SET date_of_birth = '1945-01-01' WHERE date_of_birth < '1945-01-01'")
     conn.commit()
     conn.close()
 
@@ -851,7 +851,7 @@ def is_valid_phone(phone):
 # Validate date of birth
 def is_valid_dob(dob):
     dob_year = int(str(dob).split('-')[0])
-    return dob_year >= 1950
+    return dob_year >= 1945
 
 # Add record
 def add_record(data):
@@ -937,7 +937,7 @@ if page == "Bio Data":
             last_name = st.text_input("Last Name")
             other_name = st.text_input("Other Name")
             sex = st.selectbox("Sex", ["Male", "Female"])
-            date_of_birth = st.date_input("Date of Birth", min_value=date(1950, 1, 1), max_value=date(2025, 5, 24))
+            date_of_birth = st.date_input("Date of Birth", min_value=date(1945, 1, 1), max_value=date(2025, 5, 24))
             nationality = st.selectbox("Nationality", countries)
             area_of_residence = st.text_input("Area of Residence")
         with col2:
@@ -957,7 +957,7 @@ if page == "Bio Data":
             elif not is_valid_phone(contact_number) or not is_valid_phone(emergency_contact_number):
                 st.error("Invalid phone number.")
             elif not is_valid_dob(date_of_birth):
-                st.error("Date of Birth must be on or after January 1, 1950.")
+                st.error("Date of Birth must be on or after January 1, 1945.")
             else:
                 record_id = generate_custom_id()
                 data = (
