@@ -848,21 +848,22 @@ def generate_custom_id():
 def is_valid_phone(phone):
     return re.match(r'^\+?\d{10,15}$', phone) is not None
 
-# Validate date of birth format and range
-def is_valid_dob(dob_str):
-    # Check format: YYYY-MM-DD
-    if not re.match(r'^\d{4}-\d{2}-\d{2}$', dob_str):
-        return False, "Date of Birth must be in YYYY-MM-DD format (e.g., 1940-01-01)."
-    
-    try:
-        dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
-        min_date = date(1940, 1, 1)
-        max_date = date(2025, 5, 24)
-        if not (min_date <= dob <= max_date):
-            return False, "Date of Birth must be between 1940-01-01 and 2025-05-24."
-        return True, ""
-    except ValueError:
-        return False, "Invalid date format or value. Use YYYY-MM-DD (e.g., 1940-01-01)."
+# Validate age
+def is_valid_age(age):
+    if not age.isdigit():
+        return False, "Age must be a valid number."
+    age = int(age)
+    min_age = 0
+    max_age = 85  # Based on 1940 to 2025
+    if not (min_age <= age <= max_age):
+        return False, f"Age must be between {min_age} and {max_age} years."
+    return True, ""
+
+# Calculate date of birth from age
+def calculate_dob(age):
+    current_date = date(2025, 5, 24)  # Current date: May 24, 2025
+    birth_year = current_date.year - int(age)
+    return current_date.replace(year=birth_year).strftime('%Y-%m-%d')
 
 # Add record
 def add_record(data):
@@ -948,7 +949,7 @@ if page == "Bio Data":
             last_name = st.text_input("Last Name")
             other_name = st.text_input("Other Name")
             sex = st.selectbox("Sex", ["Male", "Female"])
-            date_of_birth = st.text_input("Date of Birth (YYYY-MM-DD)", placeholder="e.g., 1940-01-01")
+            age = st.number_input("Age (years)", min_value=0, max_value=85, step=1)
             nationality = st.selectbox("Nationality", countries)
             area_of_residence = st.text_input("Area of Residence")
         with col2:
@@ -968,14 +969,15 @@ if page == "Bio Data":
             elif not is_valid_phone(contact_number) or not is_valid_phone(emergency_contact_number):
                 st.error("Invalid phone number.")
             else:
-                # Validate date of birth
-                is_valid, error_message = is_valid_dob(date_of_birth)
+                # Validate age
+                is_valid, error_message = is_valid_age(str(age))
                 if not is_valid:
                     st.error(error_message)
                 else:
+                    dob = calculate_dob(age)
                     record_id = generate_custom_id()
                     data = (
-                        record_id, first_name, last_name, other_name, sex, date_of_birth, nationality,
+                        record_id, first_name, last_name, other_name, sex, dob, nationality,
                         area_of_residence, religion, contact_number, religious_denomination,
                         emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
                         marital_status, occupation, "", "", "", "", "", "", "", ""
