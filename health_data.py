@@ -848,10 +848,21 @@ def generate_custom_id():
 def is_valid_phone(phone):
     return re.match(r'^\+?\d{10,15}$', phone) is not None
 
-# Validate date of birth
-def is_valid_dob(dob):
-    dob_year = int(str(dob).split('-')[0])
-    return dob_year >= 1940
+# Validate date of birth format and range
+def is_valid_dob(dob_str):
+    # Check format: YYYY-MM-DD
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', dob_str):
+        return False, "Date of Birth must be in YYYY-MM-DD format (e.g., 1940-01-01)."
+    
+    try:
+        dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
+        min_date = date(1940, 1, 1)
+        max_date = date(2025, 5, 24)
+        if not (min_date <= dob <= max_date):
+            return False, "Date of Birth must be between 1940-01-01 and 2025-05-24."
+        return True, ""
+    except ValueError:
+        return False, "Invalid date format or value. Use YYYY-MM-DD (e.g., 1940-01-01)."
 
 # Add record
 def add_record(data):
@@ -937,7 +948,7 @@ if page == "Bio Data":
             last_name = st.text_input("Last Name")
             other_name = st.text_input("Other Name")
             sex = st.selectbox("Sex", ["Male", "Female"])
-            date_of_birth = st.date_input("Date of Birth", min_value=date(1940, 1, 1), max_value=date(2025, 5, 24))
+            date_of_birth = st.text_input("Date of Birth (YYYY-MM-DD)", placeholder="e.g., 1940-01-01")
             nationality = st.selectbox("Nationality", countries)
             area_of_residence = st.text_input("Area of Residence")
         with col2:
@@ -947,7 +958,7 @@ if page == "Bio Data":
             emergency_contact_name = st.text_input("Emergency Contact Name")
             emergency_contact_number = st.text_input("Emergency Contact Number")
             emergency_contact_relationship = st.text_input("Emergency Contact Relationship")
-            marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced"])
+            marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced", "Widow", "Widower"])
             occupation = st.text_input("Occupation")
 
         submit = st.form_submit_button("Save Bio Data")
@@ -956,21 +967,24 @@ if page == "Bio Data":
                 st.error("Please fill all required fields.")
             elif not is_valid_phone(contact_number) or not is_valid_phone(emergency_contact_number):
                 st.error("Invalid phone number.")
-            elif not is_valid_dob(date_of_birth):
-                st.error("Date of Birth must be on or after January 1, 1940.")
             else:
-                record_id = generate_custom_id()
-                data = (
-                    record_id, first_name, last_name, other_name, sex, str(date_of_birth), nationality,
-                    area_of_residence, religion, contact_number, religious_denomination,
-                    emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
-                    marital_status, occupation, "", "", "", "", "", "", "", ""
-                )
-                try:
-                    add_record(data)
-                    st.success(f"Record saved with ID: {record_id}")
-                except sqlite3.Error as err:
-                    st.error(f"Error saving record: {err}")
+                # Validate date of birth
+                is_valid, error_message = is_valid_dob(date_of_birth)
+                if not is_valid:
+                    st.error(error_message)
+                else:
+                    record_id = generate_custom_id()
+                    data = (
+                        record_id, first_name, last_name, other_name, sex, date_of_birth, nationality,
+                        area_of_residence, religion, contact_number, religious_denomination,
+                        emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
+                        marital_status, occupation, "", "", "", "", "", "", "", ""
+                    )
+                    try:
+                        add_record(data)
+                        st.success(f"Record saved with ID: {record_id}")
+                    except sqlite3.Error as err:
+                        st.error(f"Error saving record: {err}")
 
 elif page == "Lab Results":
     tab1, tab2 = st.tabs(["Update Lab Results", "All Records"])
