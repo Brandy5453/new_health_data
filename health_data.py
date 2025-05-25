@@ -787,6 +787,273 @@
 #             st.error(f"Failed to load records: {err}")
 
 
+# import streamlit as st
+# import sqlite3
+# import pandas as pd
+# from datetime import datetime, date
+# import re
+
+# # Database connection configuration
+# def get_db_connection():
+#     return sqlite3.connect("health_screening.db", check_same_thread=False)
+
+# # Initialize database
+# def init_db():
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute('''CREATE TABLE IF NOT EXISTS screening (
+#         id VARCHAR(36) PRIMARY KEY,
+#         first_name VARCHAR(255),
+#         last_name VARCHAR(255),
+#         other_name VARCHAR(255),
+#         sex VARCHAR(10),
+#         date_of_birth VARCHAR(10),
+#         nationality VARCHAR(100),
+#         area_of_residence VARCHAR(255),
+#         religion VARCHAR(50),
+#         contact_number VARCHAR(15),
+#         religious_denomination VARCHAR(255),
+#         emergency_contact_name VARCHAR(255),
+#         emergency_contact_number VARCHAR(15),
+#         emergency_contact_relationship VARCHAR(100),
+#         marital_status VARCHAR(50),
+#         occupation VARCHAR(255),
+#         blood_group VARCHAR(10),
+#         hepatitis_b VARCHAR(10),
+#         vaccine_shots TEXT,
+#         sugar_level VARCHAR(50),
+#         bp_levels VARCHAR(50),
+#         height VARCHAR(10),
+#         weight VARCHAR(10),
+#         hiv_status VARCHAR(20),
+#         created_at VARCHAR(20)
+#     )''')
+#     conn.commit()
+#     # Update existing records with date_of_birth before 1940
+#     c.execute("UPDATE screening SET date_of_birth = '1940-01-01' WHERE date_of_birth < '1940-01-01'")
+#     conn.commit()
+#     conn.close()
+
+# # Generate unique ID
+# def generate_custom_id():
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute("SELECT id FROM screening WHERE id LIKE 'ICGChealth%'")
+#     ids = c.fetchall()
+#     conn.close()
+#     max_num = max([int(i[0].replace('ICGChealth', '')) for i in ids if i[0].startswith('ICGChealth')] + [0])
+#     return f'ICGChealth{max_num + 1}'
+
+# # Validate phone number
+# def is_valid_phone(phone):
+#     return re.match(r'^\+?\d{10,15}$', phone) is not None
+
+# # Validate age
+# def is_valid_age(age):
+#     if not age.isdigit():
+#         return False, "Age must be a valid number."
+#     age = int(age)
+#     min_age = 0
+#     max_age = 85  # Based on 1940 to 2025
+#     if not (min_age <= age <= max_age):
+#         return False, f"Age must be between {min_age} and {max_age} years."
+#     return True, ""
+
+# # Calculate date of birth from age
+# def calculate_dob(age):
+#     current_date = date(2025, 5, 24)  # Current date: May 24, 2025
+#     birth_year = current_date.year - int(age)
+#     return current_date.replace(year=birth_year).strftime('%Y-%m-%d')
+
+# # Add record
+# def add_record(data):
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute('''INSERT INTO screening (
+#         id, first_name, last_name, other_name, sex, date_of_birth, nationality,
+#         area_of_residence, religion, contact_number, religious_denomination,
+#         emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
+#         marital_status, occupation, blood_group, hepatitis_b, vaccine_shots,
+#         sugar_level, bp_levels, height, weight, hiv_status, created_at
+#     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+#     data + (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),))
+#     conn.commit()
+#     conn.close()
+
+# # Search record
+# def search_record(record_id):
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute('SELECT * FROM screening WHERE id = ?', (record_id,))
+#     record = c.fetchone()
+#     conn.close()
+#     return record
+
+# # Delete record
+# def delete_record(record_id):
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute('DELETE FROM screening WHERE id = ?', (record_id,))
+#     conn.commit()
+#     conn.close()
+
+# # Update lab results
+# def update_lab_results(record_id, lab_data):
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute('''UPDATE screening SET
+#         blood_group = ?, hepatitis_b = ?, vaccine_shots = ?,
+#         sugar_level = ?, bp_levels = ?, height = ?, weight = ?, hiv_status = ?
+#         WHERE id = ?''', lab_data + (record_id,))
+#     conn.commit()
+#     conn.close()
+
+# # Fetch all records for display
+# def fetch_all_records():
+#     conn = get_db_connection()
+#     c = conn.cursor()
+#     c.execute('SELECT * FROM screening ORDER BY created_at DESC')
+#     records = c.fetchall()
+#     conn.close()
+#     return records
+
+# # Page config and styling
+# st.set_page_config(page_title="Church Health Screening App", layout="wide")
+# st.markdown("""
+# <style>
+#     .stButton>button { background-color: #4CAF50; color: white; border-radius: 5px; }
+#     .stTextInput>div>input, .stSelectbox>div>div { border: 2px solid #2196F3; border-radius: 5px; }
+#     .sidebar .sidebar-content { background-color: #F0F8FF; }
+# </style>
+# """, unsafe_allow_html=True)
+
+# try:
+#     init_db()
+# except sqlite3.Error as err:
+#     st.error(f"Database connection failed: {err}")
+#     st.stop()
+
+# with st.sidebar:
+#     st.header("Health Screening")
+#     page = st.radio("Select Option", ["Bio Data", "Lab Results"])
+
+# # Nationalities for dropdown
+# countries = ["Ghana", "Nigeria", "Kenya", "USA", "UK"]  # Trimmed for brevity
+
+# if page == "Bio Data":
+#     st.header("Add Bio Data")
+#     with st.form("bio_data_form"):
+#         col1, col2 = st.columns(2)
+#         with col1:
+#             first_name = st.text_input("First Name")
+#             last_name = st.text_input("Last Name")
+#             other_name = st.text_input("Other Name")
+#             sex = st.selectbox("Sex", ["Male", "Female"])
+#             age = st.number_input("Age (years)", min_value=0, max_value=85, step=1)
+#             nationality = st.selectbox("Nationality", countries)
+#             area_of_residence = st.text_input("Area of Residence")
+#         with col2:
+#             religion = st.selectbox("Religion", ["Christian", "Islamic", "Others"])
+#             contact_number = st.text_input("Contact Number")
+#             religious_denomination = st.text_input("Religious Denomination")
+#             emergency_contact_name = st.text_input("Emergency Contact Name")
+#             emergency_contact_number = st.text_input("Emergency Contact Number")
+#             emergency_contact_relationship = st.text_input("Emergency Contact Relationship")
+#             marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced", "Widow", "Widower"])
+#             occupation = st.text_input("Occupation")
+
+#         submit = st.form_submit_button("Save Bio Data")
+#         if submit:
+#             if not first_name or not last_name or not contact_number:
+#                 st.error("Please fill all required fields.")
+#             elif not is_valid_phone(contact_number) or not is_valid_phone(emergency_contact_number):
+#                 st.error("Invalid phone number.")
+#             else:
+#                 # Validate age
+#                 is_valid, error_message = is_valid_age(str(age))
+#                 if not is_valid:
+#                     st.error(error_message)
+#                 else:
+#                     dob = calculate_dob(age)
+#                     record_id = generate_custom_id()
+#                     data = (
+#                         record_id, first_name, last_name, other_name, sex, dob, nationality,
+#                         area_of_residence, religion, contact_number, religious_denomination,
+#                         emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
+#                         marital_status, occupation, "", "", "", "", "", "", "", ""
+#                     )
+#                     try:
+#                         add_record(data)
+#                         st.success(f"Record saved with ID: {record_id}")
+#                     except sqlite3.Error as err:
+#                         st.error(f"Error saving record: {err}")
+
+# elif page == "Lab Results":
+#     tab1, tab2 = st.tabs(["Update Lab Results", "All Records"])
+
+#     with tab1:
+#         st.subheader("Search and Update Lab Results")
+#         search_id = st.text_input("Enter Record ID")
+#         if search_id:
+#             try:
+#                 record = search_record(search_id)
+#                 if record:
+#                     st.dataframe(pd.DataFrame([record], columns=[
+#                         'ID', 'First Name', 'Last Name', 'Other Name', 'Sex', 'Date of Birth', 'Nationality',
+#                         'Area of Residence', 'Religion', 'Contact Number', 'Religious Denomination',
+#                         'Emergency Contact Name', 'Emergency Contact Number', 'Emergency Contact Relationship',
+#                         'Marital Status', 'Occupation', 'Blood Group', 'Hepatitis B', 'Vaccine Shots',
+#                         'Sugar Level', 'BP Levels', 'Height', 'Weight', 'HIV Status', 'Created At'
+#                     ]), use_container_width=True)
+
+#                     with st.form("lab_results_form"):
+#                         col1, col2 = st.columns(2)
+#                         with col1:
+#                             blood_group = st.selectbox("Blood Group", ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], index=0)
+#                             hepatitis_b = st.selectbox("Hepatitis B", ["", "Positive", "Negative"], index=0)
+#                             vaccine_shots = st.text_input("Vaccine Shots", value=record[18] or "")
+#                             sugar_type = st.selectbox("Sugar Type", ["FBS", "RBS"], index=0)
+#                             sugar_level = st.text_input("Sugar Level", value=record[19] or "")
+#                         with col2:
+#                             bp_levels = st.text_input("BP Levels", value=record[20] or "")
+#                             height = st.text_input("Height", value=record[21] or "")
+#                             weight = st.text_input("Weight", value=record[22] or "")
+#                             hiv_status = st.selectbox("HIV Status", ["", "Positive", "Negative", "Unknown"], index=0)
+
+#                         col_submit, col_delete = st.columns(2)
+#                         update = col_submit.form_submit_button("Update Results")
+#                         delete = col_delete.form_submit_button("Delete Record")
+
+#                         if update:
+#                             combined_sugar = f"{sugar_type}: {sugar_level}" if sugar_level else sugar_type
+#                             lab_data = (blood_group, hepatitis_b, vaccine_shots, combined_sugar, bp_levels, height, weight, hiv_status)
+#                             update_lab_results(search_id, lab_data)
+#                             st.success("Lab results updated.")
+
+#                         if delete:
+#                             delete_record(search_id)
+#                             st.success("Record deleted.")
+#                             st.rerun()
+#                 else:
+#                     st.error("Record not found.")
+#             except sqlite3.Error as err:
+#                 st.error(f"Error: {err}")
+
+#     with tab2:
+#         st.subheader("All Records")
+#         try:
+#             records = fetch_all_records()
+#             df = pd.DataFrame(records, columns=[
+#                 'ID', 'First Name', 'Last Name', 'Other Name', 'Sex', 'Date of Birth', 'Nationality',
+#                 'Area of Residence', 'Religion', 'Contact Number', 'Religious Denomination',
+#                 'Emergency Contact Name', 'Emergency Contact Number', 'Emergency Contact Relationship',
+#                 'Marital Status', 'Occupation', 'Blood Group', 'Hepatitis B', 'Vaccine Shots',
+#                 'Sugar Level', 'BP Levels', 'Height', 'Weight', 'HIV Status', 'Created At'
+#             ])
+#             st.dataframe(df, use_container_width=True)
+#         except sqlite3.Error as err:
+#             st.error(f"Failed to load records: {err}")
+
 import streamlit as st
 import sqlite3
 import pandas as pd
@@ -861,9 +1128,18 @@ def is_valid_age(age):
 
 # Calculate date of birth from age
 def calculate_dob(age):
-    current_date = date(2025, 5, 24)  # Current date: May 24, 2025
+    current_date = date(2025, 5, 25)  # Updated to current date: May 25, 2025, 12:16 AM GMT
     birth_year = current_date.year - int(age)
     return current_date.replace(year=birth_year).strftime('%Y-%m-%d')
+
+# Check for duplicate record
+def is_duplicate_record(first_name, last_name, dob):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM screening WHERE first_name = ? AND last_name = ? AND date_of_birth = ?", (first_name, last_name, dob))
+    count = c.fetchone()[0]
+    conn.close()
+    return count > 0
 
 # Add record
 def add_record(data):
@@ -921,6 +1197,11 @@ def fetch_all_records():
 st.set_page_config(page_title="Church Health Screening App", layout="wide")
 st.markdown("""
 <style>
+    .stApp {
+        background: linear-gradient(135deg, #4CAF50 0%, #607D8B 25%, #FF5722 50%, #9C27B0 75%, #2196F3 100%);
+        background-size: cover;
+        background-attachment: fixed;
+    }
     .stButton>button { background-color: #4CAF50; color: white; border-radius: 5px; }
     .stTextInput>div>input, .stSelectbox>div>div { border: 2px solid #2196F3; border-radius: 5px; }
     .sidebar .sidebar-content { background-color: #F0F8FF; }
@@ -975,18 +1256,22 @@ if page == "Bio Data":
                     st.error(error_message)
                 else:
                     dob = calculate_dob(age)
-                    record_id = generate_custom_id()
-                    data = (
-                        record_id, first_name, last_name, other_name, sex, dob, nationality,
-                        area_of_residence, religion, contact_number, religious_denomination,
-                        emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
-                        marital_status, occupation, "", "", "", "", "", "", "", ""
-                    )
-                    try:
-                        add_record(data)
-                        st.success(f"Record saved with ID: {record_id}")
-                    except sqlite3.Error as err:
-                        st.error(f"Error saving record: {err}")
+                    # Check for duplicate
+                    if is_duplicate_record(first_name, last_name, dob):
+                        st.error("Record already saved.")
+                    else:
+                        record_id = generate_custom_id()
+                        data = (
+                            record_id, first_name, last_name, other_name, sex, dob, nationality,
+                            area_of_residence, religion, contact_number, religious_denomination,
+                            emergency_contact_name, emergency_contact_number, emergency_contact_relationship,
+                            marital_status, occupation, "", "", "", "", "", "", "", ""
+                        )
+                        try:
+                            add_record(data)
+                            st.success(f"Record saved with ID: {record_id}")
+                        except sqlite3.Error as err:
+                            st.error(f"Error saving record: {err}")
 
 elif page == "Lab Results":
     tab1, tab2 = st.tabs(["Update Lab Results", "All Records"])
